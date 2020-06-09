@@ -1,7 +1,7 @@
 // MODEL CONTROLLER
 
 const modelController = (function() {
-  class Question {
+  class Questions {
     constructor(category, difficulty) {
       this.category = category
       this.difficulty = difficulty
@@ -12,7 +12,27 @@ const modelController = (function() {
       try {
         const res = await (await fetch(`https://opentdb.com/api.php?amount=20&category=${this.category}&difficulty=${this.difficulty}`)).json()
         this.questions = res
-        console.log(res)
+        this.test = res.results.reduce((acc, obj) => {
+          acc.push({
+              "category": obj.category,
+              "type": obj.type,
+              "difficulty": obj.difficulty,
+              "question": obj.question,
+              optionsCheck: () => {
+                let optionsObject = {}
+                obj.incorrect_answers.forEach(option => optionsObject[option] = "incorrect")
+                optionsObject[obj.correct_answer] = "correct"
+                return optionsObject
+              },
+              options: () => {
+                let options = obj.incorrect_answers
+                options.splice(Math.floor(Math.random()*options.length), 0, obj.correct_answer)
+                return options
+              }
+          })
+          return acc
+        }, [])
+        console.log(this.test)
       }catch(err) {
         console.log(err)
       }
@@ -30,6 +50,7 @@ const modelController = (function() {
       this.username = username
       this.category = category
       this.difficulty = difficulty
+      this.avatar = `https://avatars.dicebear.com/api/bottts/${this.username}.svg`
     }
     //Best score: 
   }
@@ -45,12 +66,12 @@ const modelController = (function() {
 
   return {
     createQuestions: (ctg, dft) => {
-      return new Question(ctg, dft)
+      return new Questions(ctg, dft)
     },
     createNewUser: (username, category, difficulty) => {
       return new User(username, category, difficulty)
     },
-    quiz_categories
+    quiz_categories,
   }
 })()
 
@@ -59,6 +80,7 @@ const modelController = (function() {
 const UIController = (function() {
   const DOMStrings = () => {
     const rootDiv = document.getElementById('root')
+    const userProfile = document.querySelector('.user-profile')
     const username = document.querySelector('.form-input')
     const category = document.getElementById('category')
     const difficulty = document.getElementById('difficulty')
@@ -67,6 +89,7 @@ const UIController = (function() {
     const options = document.querySelector('.answers')
     const button = document.querySelector('.form-button')
     return {
+      userProfile,
       username,
       category,
       difficulty,
@@ -83,6 +106,19 @@ const UIController = (function() {
     '/quiz': quizMarkUp
   }
 
+  const renderLoader = element => {
+    const loader = `
+    <div class="spinner">
+      <div class="overlay"></div>
+      <div class="fulfilling-bouncing-circle-spinner">
+        <div class="circle"></div>
+        <div class="orbit"></div>
+      </div>
+    </div>
+    `
+    element.insertAdjacentHTML('afterbegin', loader)
+  }
+
   return {
     getRoutes: () => routes,
     getDOMStrings: () => DOMStrings,
@@ -93,20 +129,36 @@ const UIController = (function() {
         difficulty: DOMStrings().difficulty.value
       }
     },
-    renderQuestion: question => {
-      console.log(DOMStrings().currentQuestion)
-      // let optionsMarkUp = (option) => `<div class="option"><p class="test">${option}</p></div>`
-      // DOMStrings().currentQuestion.innerHTML = question.question
-      // DOMStrings().currentCategory.innerHTML = question.category
-      // question.incorrect_answers.forEach(option => DOMStrings().options.insertAdjacentHTML('afterbegin', optionsMarkUp(option)))
-    }
+
+    displayQuestion: question => {
+      console.log(question)
+      let optionsMarkUp = (option) => `<div class="option"><p>${option}</p></div>`
+      DOMStrings().currentQuestion.innerHTML = question[0].question
+      DOMStrings().currentCategory.innerHTML = question[0].category
+      question[0].options().forEach(option => DOMStrings().options.insertAdjacentHTML('afterbegin', optionsMarkUp(option)))
+    },
+
+    displayUser: (element, {username, category, difficulty, avatar}) => {
+      const userMarkup = `
+      <div class="avatar"><img style="width: 100%" src="${avatar}" alt="user image"></div>
+      <div class="bio">
+        <h2>${username}</h2>
+        <p><small>category:</small> ${category}</p></br>
+        <p><small>Difficulty:</small> ${difficulty}</p></br>
+        <p><small>Best score:</small> 18/20</p></br>
+        <p><small>Score:</small> 08/20</p>
+      </div>
+      `
+      element.insertAdjacentHTML('afterbegin', userMarkup)
+    },
+    renderLoader
   }
 
 })()
 
 
 // APP CONTROLLER
-const controller = (function(questionCtrl, UICtrl) {
+const controller = (function(modelCtrl, UICtrl) {
   const DOM = UICtrl.getDOMStrings()
 
   /**************ROUTER*****************/ 
@@ -138,14 +190,30 @@ const controller = (function(questionCtrl, UICtrl) {
     DOM().button.addEventListener('click', getQuestions)
   }
 
+  //GET USER
+  function setUser(username, category, difficulty) {
+    const user = modelCtrl.createNewUser(username, category, difficulty)
+    UICtrl.displayUser(DOM().userProfile, user)
+
+  }
+
+  // GET QUESTIONS
   async function getQuestions() {
+    const username = DOM().username.value
+    const category = DOM().category.value
     const categoryId = modelController.quiz_categories[DOM().category.value]
     const difficulty = DOM().difficulty.value.toLowerCase()
     //render loader
-    const question = questionCtrl.createQuestions(categoryId, difficulty)
-    // await question.getQuestions()
-    onNavigate('/quiz')
-    return question
+    const newQuestions = modelCtrl.createQuestions(categoryId, difficulty)
+    UICtrl.renderLoader(document.querySelector('.home-container'))
+    await newQuestions.getQuestions()
+    const allQuestions = await newQuestions.test
+    if(allQuestions) {
+      onNavigate('/quiz')
+      UICtrl.displayQuestion(allQuestions)
+      setUser(username, category, difficulty)
+    }
+    return allQuestions
   }
 
   return {
