@@ -1,27 +1,7 @@
 // 20200531110033
 // https://opentdb.com/api.php?amount=20&category=9
 
-let test = res.reduce((acc, obj) => {
-  acc.push({
-      "category": obj.category,
-      "type": obj.type,
-      "difficulty": obj.difficulty,
-      "question": obj.question,
-      optionsCheck: () => {
-        let optionsObject = {}
-        obj.incorrect_answers.forEach(option => optionsObject[option] = "incorrect")
-        optionsObject[obj.correct_answer] = "correct"
-        return optionsObject
-      },
-      options: () => {
-        let options = obj.incorrect_answers
-        options.splice(Math.floor(Math.random()*arr.length), 0, obj.correct_answer)
-        return options
-      }
-  })
-  return acc
-}, [])
-console.log(test)
+
 
 {
   "response_code": 0,

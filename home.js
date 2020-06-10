@@ -8,9 +8,9 @@ let homeMarkup = `
         <option>General Knowledge</option>
         <option>Science</option>
         <option>History</option>
-        <option>Politics</option>
-        <option>Celebrities</option>
-        <option>Sports</option>
+        <option>Computers</option>
+        <option>Film</option>
+        <option>Music</option>
       </select>
     </span>
     <span class="custom-dropdown--white">

@@ -11,8 +11,7 @@ const modelController = (function() {
     async getQuestions() {
       try {
         const res = await (await fetch(`https://opentdb.com/api.php?amount=20&category=${this.category}&difficulty=${this.difficulty}`)).json()
-        this.questions = res
-        this.test = res.results.reduce((acc, obj) => {
+        this.questions = res.results.reduce((acc, obj) => {
           acc.push({
               "category": obj.category,
               "type": obj.type,
@@ -32,7 +31,6 @@ const modelController = (function() {
           })
           return acc
         }, [])
-        console.log(this.test)
       }catch(err) {
         console.log(err)
       }
@@ -57,11 +55,11 @@ const modelController = (function() {
 
   const quiz_categories = {
     "General Knowledge": 9,
+    "Film": 11,
+    "Music": 12,
     "Science": 17,
-    "Sports": 21,
+    "Computers": 18,
     "History": 23,
-    "Politics": 24,
-    "Celebrities": 26,
   }
 
   return {
@@ -86,8 +84,10 @@ const UIController = (function() {
     const difficulty = document.getElementById('difficulty')
     const currentCategory = document.querySelector('.current-category')
     const currentQuestion = document.querySelector('.current-question')
-    const options = document.querySelector('.answers')
+    const options = document.querySelector('.options')
     const button = document.querySelector('.form-button')
+    const next = document.querySelector('.next')
+    const quit = document.querySelector('.quit')
     return {
       userProfile,
       username,
@@ -97,7 +97,9 @@ const UIController = (function() {
       currentCategory,
       currentQuestion,
       options,
-      button
+      button,
+      next,
+      quit
     }
   }
 
@@ -132,10 +134,17 @@ const UIController = (function() {
 
     displayQuestion: question => {
       console.log(question)
+      console.log(question.optionsCheck())
       let optionsMarkUp = (option) => `<div class="option"><p>${option}</p></div>`
-      DOMStrings().currentQuestion.innerHTML = question[0].question
-      DOMStrings().currentCategory.innerHTML = question[0].category
-      question[0].options().forEach(option => DOMStrings().options.insertAdjacentHTML('afterbegin', optionsMarkUp(option)))
+      DOMStrings().currentQuestion.innerHTML = question.question
+      DOMStrings().currentCategory.innerHTML = question.category
+      question.options().forEach(option => DOMStrings().options.insertAdjacentHTML('afterbegin', optionsMarkUp(option)))
+    },
+
+    validateAnswer: (choice, correct_answer, element) => {
+      if(choice === correct_answer) {
+        element.classList.add('.correct')
+      } element.classList.add('.incorrect')
     },
 
     displayUser: (element, {username, category, difficulty, avatar}) => {
@@ -171,7 +180,7 @@ const controller = (function(modelCtrl, UICtrl) {
   function unmountWindow() {
     window.onpopstate = () => {
       DOM().rootDiv.innerHTML = UICtrl.getRoutes()[window.location.pathname]
-      setUpEventListeners()
+      setUpEventListeners(DOM().button, getQuestions)
     }
   }
 
@@ -186,8 +195,8 @@ const controller = (function(modelCtrl, UICtrl) {
   }
 
   /*********APP CONTROLS*********/
-  function setUpEventListeners() {
-    DOM().button.addEventListener('click', getQuestions)
+  function setUpEventListeners(elm, callback) {
+    elm.addEventListener('click', callback)
   }
 
   //GET USER
@@ -207,20 +216,52 @@ const controller = (function(modelCtrl, UICtrl) {
     const newQuestions = modelCtrl.createQuestions(categoryId, difficulty)
     UICtrl.renderLoader(document.querySelector('.home-container'))
     await newQuestions.getQuestions()
-    const allQuestions = await newQuestions.test
+    const allQuestions = await newQuestions.questions
     if(allQuestions) {
+      console.log(allQuestions[0])
       onNavigate('/quiz')
-      UICtrl.displayQuestion(allQuestions)
+      UICtrl.displayQuestion(allQuestions[0])
       setUser(username, category, difficulty)
+
+      setUpEventListeners(DOM().options, validateAnswer(allQuestions))
     }
+    question = allQuestions
     return allQuestions
+  }
+
+  function validateAnswer(question) {
+    let checked = false  //Hoisting 😜
+    const options = new Array(...document.querySelectorAll('.option'))
+    function event(e) {
+      const element = e.target.closest('.option')
+      if(element && checked !== true) {
+        const choice = element.childNodes[0].textContent
+        if(question[0].optionsCheck()[choice] === 'correct'){
+          element.classList.add('correct')
+        }else {
+          element.classList.add('incorrect')
+          options.forEach(elm => {
+            console.log(elm.childNodes[0])
+            if(question[0].optionsCheck()[elm.childNodes[0].textContent] === 'correct') {
+              elm.classList.add('correct')
+            }
+          })
+        } 
+        checked = true
+      }
+    }
+    return event
+  }
+
+  function next() {
+    
   }
 
   return {
     init: () => {
       console.log('application has started')
       mountWindow()
-      setUpEventListeners()
+      setUpEventListeners(DOM().button, getQuestions)
       unmountWindow()
     },
     onNavigate: () => onNavigate
@@ -243,7 +284,3 @@ controller.init()
 
 
 
-
-
-
-// document.querySelector('.form-button').addEventListener('click', () => onNavigate('/quiz'))
