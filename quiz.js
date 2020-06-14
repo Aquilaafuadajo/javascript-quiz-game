@@ -9,11 +9,13 @@ let quizMarkUp = `
     <p class="current-question">Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero vitae eum ab accusantium. Fugit obcaecati ea facere sunt molestiae provident consequuntur nobis magni et, nostrum nihil expedita soluta ab velit.</p>
   </div>
   <div class="options">
+    <div class="choices">
     
+    </div>
 
     <div class="bottom">
-    <button class="btn next">quit <i class="fa fa-power-off" aria-hidden="true"></i></button>
-    <button class="btn quit">next</button>
+    <button class="btn quit">quit <i class="fa fa-power-off" aria-hidden="true"></i></button>
+    <button class="btn next">next</button>
     </div>
   </div>
   

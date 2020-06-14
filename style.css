@@ -249,7 +249,7 @@ p {
   outline: none;
 }
 
-.next:hover .fa{
+.quit:hover .fa{
   color: #f00;
   text-shadow: 0 0 15px #f00;
 }
