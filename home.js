@@ -2,7 +2,7 @@ let homeMarkup = `
 <div class="home-container">
   <div class="welcome">
     <h1>Welcome</h1>
-    <input class="form-input" type="text" placeholder="Username">
+    <input class="form-input" type="text" placeholder="Username" maxlength="6">
     <span class="custom-dropdown--white">
       <select id="category" class="custom-dropdown__select custom-dropdown__select--white">
         <option>General Knowledge</option>

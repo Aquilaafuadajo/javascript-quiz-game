@@ -66,6 +66,7 @@ p {
   cursor: pointer;
   font-weight: 600;
   outline: none;
+  color: #ffffff5b;
 }
 .link-btn:hover {
   box-shadow: -2px -2px 5px #242e61, 2px 2px 5px #303e83;
