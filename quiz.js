@@ -4,7 +4,7 @@ let quizMarkUp = `
 <section class="quiz">
   <h1 class="current-category">Mathematics Quiz</h1>
   <div class="question">
-  <p>Question <span class="current-count">06</span>/20</p>
+  <p>Question <span class="current-count">01</span>/20</p>
   <hr style="background: green; height: 2px; border: none;"/>
     <p class="current-question">Lorem ipsum dolor sit amet consectetur adipisicing elit. Vero vitae eum ab accusantium. Fugit obcaecati ea facere sunt molestiae provident consequuntur nobis magni et, nostrum nihil expedita soluta ab velit.</p>
   </div>

@@ -22,7 +22,6 @@ const modelController = (function() {
                 obj.incorrect_answers.forEach(option => {
                   if(/&#?[a-z0-9]+;/.test(option)) {
                     let validString = option.replace(/&#?[a-z0-9]+;/g, "'")
-                    console.log('validString: ' + validString + 'option: ' + option)
                     optionsObject[validString] = "incorrect"
                   } else {
                     optionsObject[option] = "incorrect"
@@ -30,7 +29,6 @@ const modelController = (function() {
                 })
                 // '&dagger'.match(/&#?[a-z0-9]+/g)
                 if(/&#?[a-z0-9]+;/.test(obj.correct_answer)) {
-                  console.log(obj.correct_answer)
                   let validString = obj.correct_answer.replace(/&#?[a-z0-9]+;/g, "'")
                   optionsObject[validString] = "correct"
                 } else {
@@ -99,11 +97,13 @@ const UIController = (function() {
     const difficulty = document.getElementById('difficulty')
     const currentCategory = document.querySelector('.current-category')
     const currentQuestion = document.querySelector('.current-question')
+    const currentCount = document.querySelector('.current-count')
     const options = document.querySelector('.options')
     const choices = document.querySelector('.choices')
     const button = document.querySelector('.form-button')
     const next = document.querySelector('.next')
     const quit = document.querySelector('.quit')
+    const score = document.querySelector('.score')
     return {
       userProfile,
       username,
@@ -112,11 +112,13 @@ const UIController = (function() {
       rootDiv,
       currentCategory,
       currentQuestion,
+      currentCount,
       options,
       choices,
       button,
       next,
-      quit
+      quit,
+      score
     }
   }
 
@@ -156,30 +158,41 @@ const UIController = (function() {
       DOMStrings().currentCategory.innerHTML = category
       DOMStrings().choices.innerHTML = options
     },
-
-    // validateAnswer: (choice, correct_answer, element) => {
-    //   if(choice === correct_answer) {
-    //     element.classList.add('.correct')
-    //   } element.classList.add('.incorrect')
-    // },
-
     displayUser: (element, {username, category, difficulty, avatar}) => {
       const userMarkup = `
+      <div class="username-img">
       <div class="avatar"><img style="width: 100%" src="${avatar}" alt="user image"></div>
+      <h2>${username}</h2>
+      </div>
       <div class="bio">
-        <h2>${username}</h2>
-        <p><small>category:</small> ${category}</p></br>
-        <p><small>Difficulty:</small> ${difficulty}</p></br>
-        <p><small>Score:</small> 0/20</p>
+        <p class="user-category"><small>category:</small> ${category}</p></br>
+        <p class="dfct"><small>Difficulty:</small> ${difficulty}</p></br>
+        <p class="sc"><small>Score:</small> <span class="score">0/20</span></p>
       </div>
       `
       element.insertAdjacentHTML('afterbegin', userMarkup)
+    },
+    updateScore: (score) => {
+      DOMStrings().score.innerText = `${score}/20`
+    },
+    updateCount: (count) =>  {
+      DOMStrings().currentCount.innerText = count
     },
     renderLoader,
     createOptionsMarkup: options => {
       let markUp = ``
       options.forEach(option => markUp = markUp.concat(`<div class="option"><p>${option}</p></div>`))
       return markUp
+    },
+    endPage: (score) => {
+      const endPage = `
+      <div class="end slide-in-top">
+        <h1 class="end-h1">END GAME</h1>
+        <p class="final-score">SCORE: ${score}</p>
+        <a class="link-btn" role="button" href="index.html">play again</a>
+      </div>
+      `
+      DOMStrings().rootDiv.innerHTML = endPage
     }
   }
 
@@ -219,6 +232,15 @@ const controller = (function(modelCtrl, UICtrl) {
     elm.addEventListener('click', callback)
   }
 
+  function formatNumber(number) {
+    let str = number.toString()
+    if(str.length < 2) {
+      str = '0' + str
+    }
+
+    return str
+  }
+
   //GET USER
   function setUser(username, category, difficulty) {
     const user = modelCtrl.createNewUser(username, category, difficulty)
@@ -228,32 +250,36 @@ const controller = (function(modelCtrl, UICtrl) {
 
   // GET QUESTIONS
   async function getQuestions() {
-    const username = DOM().username.value
-    const category = DOM().category.value
-    const categoryId = modelController.quiz_categories[DOM().category.value]
-    const difficulty = DOM().difficulty.value.toLowerCase()
-    //render loader
-    const newQuestions = modelCtrl.createQuestions(categoryId, difficulty)
-    UICtrl.renderLoader(document.querySelector('.home-container'))
-    await newQuestions.getQuestions()
-    const allQuestions = await newQuestions.questions
-    if(allQuestions) {
-      console.log(allQuestions)
-      onNavigate('/quiz')
-      // next(allQuestions)()
-      UICtrl.displayQuestion(allQuestions[0].question, allQuestions[0].category, UICtrl.createOptionsMarkup(allQuestions[0].options()))
-      setUser(username, category, difficulty)
-      setUpEventListeners(DOM().options, validateAnswer(allQuestions[0].question, allQuestions[0].optionsCheck()))
-      setUpEventListeners(DOM().next, next(allQuestions))
-      setUpEventListeners(DOM().quit, quit)
-      
-    }
-    // question = allQuestions
-    return allQuestions
+    if(DOM().username.value) {
+      const username = DOM().username.value
+      const category = DOM().category.value
+      const categoryId = modelController.quiz_categories[DOM().category.value]
+      const difficulty = DOM().difficulty.value.toLowerCase()
+      //render loader
+      const newQuestions = modelCtrl.createQuestions(categoryId, difficulty)
+      UICtrl.renderLoader(document.querySelector('.home-container'))
+      await newQuestions.getQuestions()
+      const allQuestions = await newQuestions.questions
+      if(allQuestions) {
+        console.log(allQuestions)
+        onNavigate('/quiz')
+        // next(allQuestions)()
+        UICtrl.displayQuestion(allQuestions[0].question, allQuestions[0].category, UICtrl.createOptionsMarkup(allQuestions[0].options()))
+        setUser(username, category, difficulty)
+        setUpEventListeners(DOM().options, validateAnswer(allQuestions[0].question, allQuestions[0].optionsCheck()))
+        setUpEventListeners(DOM().next, next(allQuestions))
+        setUpEventListeners(DOM().quit, quit)
+        
+      }
+      return allQuestions
+      }
+    alert('Please enter a valid username')
   }
 
+  let score = 0
   function validateAnswer(question, checkCorrectness) {
     let checked = false  //Hoisting 😜
+    
     const options = new Array(...document.querySelectorAll('.option'))
     function event(e) {
       const element = e.target.closest('.option')
@@ -261,6 +287,9 @@ const controller = (function(modelCtrl, UICtrl) {
         const choice = element.childNodes[0].textContent
         if(checkCorrectness[choice] === 'correct'){
           element.classList.add('correct')
+          score +=1
+          console.log(score)
+          UICtrl.updateScore(score)
         }else {
           element.classList.add('incorrect')
           options.forEach(elm => {
@@ -280,20 +309,27 @@ const controller = (function(modelCtrl, UICtrl) {
     let count = 1
 
     return () => {
-      console.log(count)
-      if(count !== questions.length) {
-        let currentQuestion = questions[count].question
-        let currentCategory = questions[count].category
-        let currentOptions = questions[count].options()
-        let checkCorrectness = questions[count].optionsCheck()
-        console.log(checkCorrectness)
-        UICtrl.displayQuestion(currentQuestion, currentCategory, UICtrl.createOptionsMarkup(currentOptions))
-        setUpEventListeners(DOM().options, validateAnswer(currentQuestion, checkCorrectness))
-        
-        count += 1
+      if(DOM().next.textContent !== 'finish') {
+        if(count !== questions.length) {
+          let currentQuestion = questions[count].question
+          let currentCategory = questions[count].category
+          let currentOptions = questions[count].options()
+          let checkCorrectness = questions[count].optionsCheck()
+          UICtrl.displayQuestion(currentQuestion, currentCategory, UICtrl.createOptionsMarkup(currentOptions))
+          UICtrl.updateCount(formatNumber(count + 1))
+          setUpEventListeners(DOM().options, validateAnswer(currentQuestion, checkCorrectness))
+          
+          count += 1
+          console.log(count)
+        }
+        if(count === 20) {
+          DOM().next.textContent = 'finish'
+        }
+      } else {
+        UICtrl.endPage(score + '/' + count)
       }
-      
     }
+    
   }
 
   function quit() {
